@@ -38,6 +38,7 @@ export email_username="yourname@mail.mcgill.ca"
 export email_password="yourpassword"
 export email_recipient="recipient@mail.mcgill.ca"
 ```
+**Note**: This has been tested using Python 3.6.7, but any version of Python above 3.6 should be sufficient. For installing Python, [please visit the official page](https://www.python.org/downloads/). Run `python --version` to ensure you are running the correct version. If you have installed Python 3.6 or above, but the version command returns `2.7`, try running `python3 --version`. If this gives the newer version, simply run: `alias python=python3` as well as `alias pip=pip3` (the `pip` version should also match Python 3.6).
 
 ## Demo
 ![demo](full_selenium_run.gif "Selenium Test Demo")
