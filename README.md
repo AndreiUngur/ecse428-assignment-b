@@ -30,3 +30,6 @@ The output should include, among other things, the full path to your chrome driv
 3. `source venv/bin/activate`: Activate your environment
 4. `pip install -r requirements.txt`: Install the requirements
 5. `python selenium-tests.py`: Run the tests :tada:
+
+## Demo
+![demo](full_selenium_run.gif "Selenium Test Demo")
