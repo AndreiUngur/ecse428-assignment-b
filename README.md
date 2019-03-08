@@ -29,7 +29,15 @@ The output should include, among other things, the full path to your chrome driv
 2. `python -m venv venv`: Create a virtual environment
 3. `source venv/bin/activate`: Activate your environment
 4. `pip install -r requirements.txt`: Install the requirements
-5. `python selenium-tests.py`: Run the tests :tada:
+5. The tests require you to set environment variables. See below the shell commands you need to run to set these up. Without these environment variables, the script will notify you to set them.
+6. `python selenium-tests.py`: Run the tests :tada:
+
+Environment variables:
+```
+export email_username="yourname@mail.mcgill.ca"
+export email_password="yourpassword"
+export email_recipient="recipient@mail.mcgill.ca"
+```
 
 ## Demo
 ![demo](full_selenium_run.gif "Selenium Test Demo")
