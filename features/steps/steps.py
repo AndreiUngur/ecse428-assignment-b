@@ -175,7 +175,7 @@ def step_impl(context):
     attachment = browser.find_element_by_xpath(f"//div[@aria-label='{context.file} Open']")
 
     assert attachment is not None
-    remove_sent_email(email_card_ref)
+    remove_sent_email(context.email_subject)
 
 
 @then('an error message displays prompting me to enter at least one recipient')
@@ -188,16 +188,19 @@ Helper functions:
 Below are helper functions re-used across the various tests.
 """
 
-def remove_sent_email(email_card_ref):
-    # Delete sent email to restore initial conditions
+def remove_sent_email(subject):
+    email_card_ref = f"//div[contains(@aria-label, 'Has attachments {subject}')]"
+    delete_button_ref = f"//div[contains(@aria-label, 'Has attachments {subject}')]//button[@title='Delete']"
     email_card = browser.find_element_by_xpath(email_card_ref)
+
+    # Delete sent email to restore initial conditions
     hoverover = ActionChains(browser).move_to_element(email_card).click().perform()
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.presence_of_element_located( 
-            (By.XPATH, f"//Button[@title='Delete']")
+            (By.XPATH, delete_button_ref)
         )
     )
-    browser.find_element_by_xpath("//Button[@title='Delete']").click()
+    browser.find_element_by_xpath(delete_button_ref).click()
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.invisibility_of_element_located( 
             (By.XPATH, email_card_ref)
