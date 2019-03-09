@@ -1,7 +1,7 @@
 from behave import *
 import os
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -33,6 +33,15 @@ def step_impl(context):
 def step_impl(context):
     # Log in to the sender's account
     browser.get('https://outlook.office.com/mail/inbox')
+    try:
+        WebDriverWait(browser, 3).until(
+            expected_conditions.alert_is_present()
+        )
+
+        alert = browser.switch_to.alert
+        alert.accept()
+    except TimeoutException:
+        pass
 
     try:
         # We might need to log in
@@ -79,6 +88,7 @@ def step_impl(context):
 def step_impl(context):
     # Send an e-mail to yourself to have an e-mail to reply to.
     create_new_email()
+    context.email_subject = reply_email_subject
     enter_subject(reply_email_subject)
     add_recipient(username)
     send_email()
@@ -86,13 +96,14 @@ def step_impl(context):
     # Wait for the e-mail we sent ourselves to be visible.
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.presence_of_element_located( 
-            (By.XPATH, f"//*[contains(text(),'{reply_email_subject}')]")
+            (By.XPATH, f"//div[contains(@aria-label, '{reply_email_subject}')]")
         )
     )
 
 
 @when('I press “new message”')
 def step_impl(context):
+    context.email_subject = email_subject
     sent_emails_button = browser.find_element_by_xpath('//*[@title="Sent Items"]')
     sent_emails_button.click()
 
@@ -124,7 +135,7 @@ def step_impl(context):
 
 @when('I enter a subject')
 def step_impl(context):
-    enter_subject()
+    enter_subject(context.email_subject)
 
 
 @when('I add an image to the e-mail body')
@@ -135,8 +146,7 @@ def step_impl(context):
 
 @when('I reply to the e-mail')
 def step_impl(context):
-    context.email_subject = reply_email_subject
-    browser.find_element_by_xpath(f"//div[contains(@aria-label,'{reply_email_subject}')]").click()
+    browser.find_element_by_xpath(f"//div[contains(@aria-label,'{context.email_subject}')]").click()
 
     # Wait for reply button to appear
     WebDriverWait(browser, timeout_seconds).until( 
@@ -180,7 +190,15 @@ def step_impl(context):
 
 @then('an error message displays prompting me to enter at least one recipient')
 def step_impl(context):
-    pass
+    error_badge = browser.find_element_by_xpath("//i[@data-icon-name='ErrorBadge']")
+    error_message = browser.find_element_by_xpath("//span[contains(text(),'This message must have at least one recipient.')]")
+    assert error_badge and error_message
+
+    browser.find_element_by_xpath("//button[@aria-label='Discard']").click()
+    browser.find_element_by_id('ok-1').click()
+
+    # This was our last one, so we safely log out.
+    # TODO: fix this log_out()
 
 
 """
@@ -210,7 +228,7 @@ def remove_sent_email(subject):
 
 def log_out():
     # Log out
-    browser.find_element_by_xpath("//button[contains(@aria-label, 'View your account information or sign out')]").click()
+    browser.find_element_by_id("O365_MainLink_Me").click()
     browser.find_element_by_id('meControlSignoutLink').click()
 
 
@@ -226,7 +244,7 @@ def create_new_email():
     )
 
 
-def enter_subject(subject=email_subject):
+def enter_subject(subject):
     subject_element = browser.find_element_by_id('subjectLine0')
     subject_element.send_keys(subject)
 
@@ -257,12 +275,12 @@ def attach_file(filename):
     # Wait for image to be fully uploaded
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.presence_of_element_located( 
-            (By.XPATH, f"//div[contains(@aria-label, '{files[0]}')]")
+            (By.XPATH, f"//div[@aria-label='Content pane']//div[contains(@aria-label, '{files[0]}')]")
         )
     )
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.presence_of_element_located( 
-            (By.XPATH, f"//img[contains(@src, 'https://attachments.office.net/owa/{username}')]")
+            (By.XPATH, f"//div[@aria-label='Content pane']//img[contains(@src, 'https://attachments.office.net/owa/{username}')]")
         )
     )
 
