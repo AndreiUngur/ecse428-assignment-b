@@ -1,29 +1,31 @@
 from behave import *
-import logging
 import os
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 import time
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
 
 # Get the variables the user must set for the test to run.
 # Warn the user if these are not set as the test can not run.
 username = os.environ.get("email_username", "")
 password = os.environ.get("email_password", "")
+
 # Three different recipients + three different attachments = six tests with different recipients & attachments.
 recipients = ["andrei.ungur@mail.mcgill.ca", "suleman.malik@mail.mcgill.ca", "andreiskate2@hotmail.com"]
 files = ["friendlybug.gif", "instructions.pdf", "bugriver.html"]
+
 email_subject = "Hello from Selenium!"
 timeout_seconds = 10
 browser = webdriver.Chrome()
 
+
 @given('I am a user with a valid outlook email address')
 def step_impl(context):
     assert username and password
+
 
 @given('I am logged in to my email')
 def step_impl(context):
@@ -94,6 +96,7 @@ def step_impl(context):
         )
     )
 
+
 @when('I enter a recipient in the “To” input field')
 def step_impl(context):
     recipient_element = browser.find_element_by_class_name('pickerInput_269bfa71')
@@ -131,6 +134,7 @@ def step_impl(context):
         )
     )
 
+
 @when('I press “Send”')
 def step_impl(context):
     # Send e-mail
@@ -159,3 +163,21 @@ def step_impl(context):
     attachment = browser.find_element_by_xpath(f"//div[@aria-label='{files[0]} Open']")
 
     assert attachment is not None
+    delete_sent_email()
+    browser.close()
+
+
+def delete_sent_email():
+    email_card = browser.find_element_by_xpath(f"//div[@aria-label='Has attachments {email_subject}']")
+    hoverover = ActionChains(browser).move_to_element(email_card).click().perform()
+    WebDriverWait(browser, timeout_seconds).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, f"//Button[@title='Delete']")
+        )
+    )
+    browser.find_element_by_xpath("//Button[@title='Delete']").click()
+    WebDriverWait(browser, timeout_seconds).until( 
+        expected_conditions.invisibility_of_element_located( 
+            (By.XPATH, f"//div[@aria-label='Has attachments {email_subject}']")
+        )
+    )
