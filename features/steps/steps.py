@@ -151,10 +151,10 @@ def step_impl(context):
     # Wait for reply button to appear
     WebDriverWait(browser, timeout_seconds).until( 
         expected_conditions.presence_of_element_located( 
-            (By.XPATH, "//button[@aria-label='Reply']")
+            (By.XPATH, "//div[contains(@aria-label, 'Content pane')]//button[@aria-label='Reply']")
         )
     )
-    browser.find_element_by_xpath("//button[@aria-label='Reply']").click()
+    browser.find_element_by_xpath("//div[contains(@aria-label,'Content pane')]//button[@aria-label='Reply']").click()
     browser.find_element_by_xpath("//label[contains(text(),'To:')]").click()
 
 
