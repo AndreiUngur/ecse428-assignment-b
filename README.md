@@ -30,7 +30,7 @@ The output should include, among other things, the full path to your chrome driv
 
 ### Python script
 
-1. Navigate to the folder `python-version`
+1. Navigate to the root of this repository
 2. `python -m venv venv`: Create a virtual environment
 3. `source venv/bin/activate`: Activate your environment
 4. `pip install -r requirements.txt`: Install the requirements (namely `Selenium` and `Behave`)
