@@ -14,9 +14,13 @@ import time
 username = os.environ.get("email_username", "")
 password = os.environ.get("email_password", "")
 
+
+error_message_ref = "//span[contains(text(),'This message must have at least one recipient.')]"
 email_subject = "A friendly bug."
 reply_email_subject = "Send me bugs."
-timeout_seconds = 10
+timeout_seconds = 8
+short_timeout = 2
+long_timeout = 15
 browser = webdriver.Chrome()
 
 
@@ -80,6 +84,7 @@ def step_impl(context):
     enter_subject(reply_email_subject)
     add_recipient(username)
     send_email()
+    goto_inbox()
 
     # Wait for the e-mail we sent ourselves to be visible.
     WebDriverWait(browser, timeout_seconds).until( 
@@ -140,6 +145,11 @@ def step_impl(context):
         )
     )
     browser.find_element_by_xpath("//div[contains(@aria-label,'Content pane')]//button[@aria-label='Reply']").click()
+    WebDriverWait(browser, timeout_seconds).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, "//label[contains(text(),'To:')]")
+        )
+    )
     browser.find_element_by_xpath("//label[contains(text(),'To:')]").click()
 
 
@@ -150,7 +160,10 @@ def step_impl(context, address):
 
 @when('I send my e-mail')
 def step_impl(context):
-    send_email()
+    # `send_email()` throws an exception if the e-mail can't be sent.
+    email_valid  = send_email()
+    if email_valid:
+        goto_inbox()
 
 
 @then('an email with {attachment} attached for {address} should appear in my Sent folder')
@@ -159,16 +172,22 @@ def step_impl(context, attachment, address):
 
     # Validate that the file was sent
     email_card_ref = f"//div[contains(@aria-label, 'Has attachments {context.email_subject}')]"
+    image_ref = f"//div[@aria-label='{attachment} Open']"
 
-    WebDriverWait(browser, timeout_seconds).until( 
+    WebDriverWait(browser, long_timeout).until( 
         expected_conditions.presence_of_element_located( 
             (By.XPATH, email_card_ref)
         )
     )
     # Click the sent e-mail
     browser.find_element_by_xpath(email_card_ref).click()
-    
-    attachment_element = browser.find_element_by_xpath(f"//div[@aria-label='{attachment} Open']")
+
+    WebDriverWait(browser, long_timeout).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, image_ref)
+        )
+    )   
+    attachment_element = browser.find_element_by_xpath(image_ref)
 
     assert attachment_element is not None
 
@@ -179,8 +198,15 @@ def step_impl(context, attachment, address):
 
 @then('the system warns me to enter at least one recipient')
 def step_impl(context):
-    error_badge = browser.find_element_by_xpath("//i[@data-icon-name='ErrorBadge']")
-    error_message = browser.find_element_by_xpath("//span[contains(text(),'This message must have at least one recipient.')]")
+    error_badge_ref = "//i[@data-icon-name='ErrorBadge']"
+
+    WebDriverWait(browser, short_timeout).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, error_message_ref)
+        )
+    )
+    error_badge = browser.find_element_by_xpath(error_badge_ref)
+    error_message = browser.find_element_by_xpath(error_message_ref)
     assert error_badge and error_message
 
     browser.find_element_by_xpath("//button[@aria-label='Discard']").click()
@@ -195,6 +221,11 @@ def remove_sent_email(subject):
     email_card_ref = f"//div[contains(@aria-label, 'Has attachments {subject}')]"
     delete_button_ref = f"//div[contains(@aria-label, 'Has attachments {subject}')]//button[@title='Delete']"
 
+    WebDriverWait(browser, short_timeout).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, email_card_ref)
+        )
+    )
     email_card = browser.find_element_by_xpath(email_card_ref)
 
     # Delete sent email to restore initial conditions
@@ -219,7 +250,7 @@ def cleanup_inbox(subject):
     # In the alternate flow, we create a temporary e-mail to reply to.
     try:
         remove_sent_email(subject)
-    except NoSuchElementException:
+    except (NoSuchElementException, TimeoutException):
         pass
 
 
@@ -273,16 +304,31 @@ def attach_file(filename):
     file_to_send = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 filename)
     body_element = browser.find_element_by_xpath("//input[@type='file' and @accept='*/*']")
-    #'_1iWL2ddLCtiEp9P-UVh8nV'
     body_element.send_keys(file_to_send)
+    longer_timeout = timeout_seconds
+
+    # If the file is huge, a popup will appear. Click "Attach", else ignore it
+    try:
+        WebDriverWait(browser, 2).until( 
+            expected_conditions.presence_of_element_located( 
+                (By.XPATH, "//button[contains(@aria-label, 'Attach as a copy, Recipients get a copy to review.')]")
+            )
+        )
+        browser.find_element_by_xpath("//button[contains(@aria-label, 'Attach as a copy, Recipients get a copy to review.')]").click()
+        # Give the browser more time to upload the huge file
+        longer_timeout = 45
+
+    except TimeoutException:
+        pass
 
     # Wait for image to be fully uploaded
-    WebDriverWait(browser, timeout_seconds).until( 
+    WebDriverWait(browser, longer_timeout).until( 
         expected_conditions.presence_of_element_located( 
             (By.XPATH, f"//div[@aria-label='Content pane']//div[contains(@aria-label, '{filename}')]")
         )
     )
-    WebDriverWait(browser, timeout_seconds).until( 
+
+    WebDriverWait(browser, longer_timeout).until( 
         expected_conditions.presence_of_element_located( 
             (By.XPATH, f"//div[@aria-label='Content pane']//img[contains(@src, 'https://attachments.office.net/owa/{username}')]")
         )
@@ -290,7 +336,14 @@ def attach_file(filename):
 
 
 def goto_sent_items():
-    sent_emails_button = browser.find_element_by_xpath('//*[@title="Sent Items"]')
+    sent_items_ref = '//*[@title="Sent Items"]'
+    WebDriverWait(browser, timeout_seconds).until( 
+        expected_conditions.presence_of_element_located( 
+            (By.XPATH, sent_items_ref)
+        )
+    )
+
+    sent_emails_button = browser.find_element_by_xpath(sent_items_ref)
     sent_emails_button.click()
 
     # Wait until we see "sent" messages
@@ -318,3 +371,13 @@ def send_email():
     # Send e-mail
     send_button = browser.find_element_by_xpath('//*[@title="Send"]')
     send_button.click()
+    # If we can find the error badge, there's a problem. Otherwise, send!
+    try:
+        WebDriverWait(browser, short_timeout).until( 
+            expected_conditions.presence_of_element_located( 
+                (By.XPATH, error_message_ref)
+            )
+        )
+        return False
+    except Exception:
+        return True

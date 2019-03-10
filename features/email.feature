@@ -5,21 +5,22 @@ Feature: As an email client user I can attach an image in an email so that I can
     Given I am a user with a valid outlook email address
     And I am logged in to my email
 
-  # Normal Flow
-  Scenario Outline: Sending email with attached image from local computer and specified recipient
-    Given I want to send a new message to <address>
-    When the subject to my e-mail is: A friendly bug.
-    And the image <attachment> is attached in the e-mail body
-    And I send my e-mail
-    Then an email with <attachment> attached for <address> should appear in my Sent folder
 
-  Examples: E-mail contents
-    | address                     | attachment          |
-    | andrei.ungur@mail.mcgill.ca | friendlybug.gif     |
-    | suleman.malik@mail.mcgill.ca| friendlybug.gif     |
-    | andreiskate2@hotmail.com    | friendlybug.gif     |
-    | andrei.ungur@mail.mcgill.ca | solaire.png         |
-    | andrei.ungur@mail.mcgill.ca | background.jpeg     |
+  # Normal Flow
+ Scenario Outline: Sending email with attached image from local computer and specified recipient
+   Given I want to send a new message to <address>
+   When the subject to my e-mail is: A friendly bug.
+   And the image <attachment> is attached in the e-mail body
+   And I send my e-mail
+   Then an email with <attachment> attached for <address> should appear in my Sent folder
+
+ Examples: E-mail contents
+   | address                     | attachment          |
+   | andrei.ungur@mail.mcgill.ca | friendlybug.gif     |
+   | andreiskate2@hotmail.com    | friendlybug.gif     |
+   | andrei.u96@hotmail.com      | solaire.png         |
+   | andreiskate@hotmail.com     | background.jpeg     |
+   | random856394@mailinator.com | biggerimage.jpg     |
 
 
   # Alternate Flow
@@ -34,10 +35,11 @@ Feature: As an email client user I can attach an image in an email so that I can
   Examples: E-mail contents
     | address                     | attachment          |
     | andrei.ungur@mail.mcgill.ca | friendlybug.gif     |
-    | suleman.malik@mail.mcgill.ca| friendlybug.gif     |
     | andreiskate2@hotmail.com    | friendlybug.gif     |
-    | andrei.ungur@mail.mcgill.ca | solaire.png         |
-    | andrei.ungur@mail.mcgill.ca | background.jpeg     |
+    | andrei.u96@hotmail.com      | solaire.png         |
+    | andreiskate@hotmail.com     | background.jpeg     |
+    | random856394@mailinator.com | biggerimage.jpg     |
+
 
   # Error Flow
   Scenario Outline: Sending email with unspecified recipient
@@ -53,3 +55,5 @@ Feature: As an email client user I can attach an image in an email so that I can
     | friendlybug.gif   |
     | solaire.png       |
     | background.jpeg   |
+    | bigimage.jpg      |
+    | biggerimage.jpg   |
