@@ -1,7 +1,7 @@
 Feature: As an email client user I can attach an image in an email so that I can send it to a recipient
 
   # Background
-  Background: some requirement of this test
+  Background: User must be logged in
     Given I am a user with a valid outlook email address
     And I am logged in to my email
 
